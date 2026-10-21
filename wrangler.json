@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "calculadora-laboral",
+  "compatibility_date": "2026-10-21",
+  "assets": {
+    "directory": "./dist/calculadora-laboral/browser",
+    "not_found_handling": "single-page-application"
+  }
+}

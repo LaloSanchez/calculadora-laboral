@@ -17,3 +17,4 @@
 | Pruebas con valores de un script independiente (Decimal) | Las pruebas no repiten el algoritmo implementado. |
 | Convención de 30.4 días por mes | Conversión de salario mensual a diario; la LFT no la fija. |
 | Reglas de rutas exhaustivas por `CalculadoraSlug` | El compilador obliga a que cada calculadora tenga componente. |
+| `wrangler.json` con Workers Static Assets y `single-page-application` | Fallback de rutas de Angular gestionado por Cloudflare; Wrangler no se agrega como dependencia (se ejecuta con `npx`). |

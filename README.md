@@ -47,15 +47,21 @@ docs/          arquitectura, decisiones técnicas, fórmulas y fuentes
 
 La lógica de cálculo vive en funciones puras (`features/*/calculators`), sin dependencias de Angular, y cada una tiene pruebas con valores calculados de forma independiente. Más detalle en [docs/arquitectura.md](docs/arquitectura.md) y [docs/decisiones-tecnicas.md](docs/decisiones-tecnicas.md).
 
-## Despliegue en Cloudflare Pages
+## Despliegue en Cloudflare
+
+El archivo [wrangler.json](wrangler.json) publica la carpeta compilada como activos estáticos de Cloudflare (Workers Static Assets) con `not_found_handling: "single-page-application"`: cualquier ruta que no sea un archivo devuelve `index.html`, así que las cinco rutas de Angular funcionan al abrirlas directamente o al recargar.
 
 1. Sube el repositorio a GitHub.
-2. En Cloudflare: *Workers & Pages → Create → Pages → Connect to Git* y elige el repositorio.
+2. En Cloudflare: *Workers & Pages → Create → Import a repository* y elige el repositorio.
 3. Configuración de compilación:
-   - Comando: `npm run build`
-   - Directorio de salida: `dist/calculadora-laboral/browser`
-   - Variable de entorno `NODE_VERSION` = `22` (si el build falla por la versión exacta de Node, usa `22.23.2`). No se requieren secretos.
-4. `public/_redirects` (`/* /index.html 200`) se copia al build y permite abrir o recargar cualquier ruta de Angular.
+   - Comando de compilación: `npm run build`
+   - Directorio de salida (definido en `wrangler.json`): `dist/calculadora-laboral/browser`
+   - Comando de despliegue: `npx wrangler deploy`
+   - Variable de entorno `NODE_VERSION` = `22` (si falla por la versión exacta de Node, usa `22.23.2`). No se requieren secretos.
+4. Para publicar desde tu equipo: `npm run build` y luego `npx wrangler deploy` (requiere iniciar sesión con `npx wrangler login`).
+5. Para validar la configuración sin desplegar: `npx wrangler deploy --dry-run`.
+
+`public/_redirects` (`/* /index.html 200`) se conserva por si el sitio se publica en Cloudflare Pages clásico, donde sí hace falta. Si el despliegue con Wrangler lo rechazara, puedes eliminarlo: `not_found_handling` ya cubre el fallback.
 
 ## Fuentes y vigencia de las reglas
 

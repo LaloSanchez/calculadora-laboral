@@ -1,0 +1,344 @@
+<section class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+  <h1 class="text-3xl font-bold text-navy-900">Calculadora de horas extra</h1>
+  <p class="mt-2 text-slate-600">
+    Estima el pago del tiempo extraordinario distinguiendo el pago doble y el triple, y señala los
+    casos que exceden los límites de la ley.
+  </p>
+
+  <form
+    class="no-print mt-8 space-y-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    [formGroup]="form"
+    (ngSubmit)="calcular()"
+    novalidate
+  >
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Salario</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="tipoSalario" class="block text-sm font-medium text-slate-700">
+            Periodicidad del salario
+          </label>
+          <select
+            id="tipoSalario"
+            formControlName="tipoSalario"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="mensual">Mensual</option>
+            <option value="diario">Diario</option>
+          </select>
+        </div>
+        <div>
+          <label for="salario" class="block text-sm font-medium text-slate-700">
+            Salario bruto (MXN)
+          </label>
+          <input
+            id="salario"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="salario"
+            placeholder="Ej. 12000"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="errorSalario() ? 'true' : null"
+            [attr.aria-describedby]="errorSalario() ? 'err-salario' : null"
+          />
+          @if (errorSalario(); as e) {
+            <p id="err-salario" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Jornada ordinaria</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="tipoJornada" class="block text-sm font-medium text-slate-700">
+            Tipo de jornada
+          </label>
+          <select
+            id="tipoJornada"
+            formControlName="tipoJornada"
+            (change)="alCambiarJornada()"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            @for (j of jornadas; track j.clave) {
+              <option [value]="j.clave">{{ j.nombre }} (máx. {{ j.horasMaximas }} h)</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="horasJornada" class="block text-sm font-medium text-slate-700">
+            Horas de la jornada ordinaria
+          </label>
+          <input
+            id="horasJornada"
+            type="number"
+            inputmode="decimal"
+            step="0.5"
+            min="0"
+            formControlName="horasJornada"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            aria-describedby="ayuda-jornada"
+            [attr.aria-invalid]="errorJornada() ? 'true' : null"
+          />
+          <p id="ayuda-jornada" class="mt-1 text-xs text-slate-500">
+            Con ellas se obtiene tu salario por hora (salario diario ÷ horas).
+          </p>
+          @if (errorJornada(); as e) {
+            <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Tiempo extra por día</legend>
+      <p class="text-sm text-slate-600">
+        Captura cada día en que trabajaste tiempo extra. La ley limita el tiempo extra a
+        {{ limites.horasPorDia }} horas diarias, {{ limites.diasPorSemana }} veces por semana y
+        {{ limites.horasPorSemana }} horas por semana; lo que se exceda se paga triple.
+      </p>
+
+      <ul class="space-y-3" formArrayName="registros">
+        @for (fila of form.controls.registros.controls; track fila; let i = $index) {
+          <li class="rounded-lg border border-slate-200 p-4" [formGroupName]="i">
+            <div class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
+              <div>
+                <label [for]="'fecha-' + i" class="block text-sm font-medium text-slate-700">
+                  Fecha
+                </label>
+                <input
+                  [id]="'fecha-' + i"
+                  type="date"
+                  formControlName="fecha"
+                  class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                  [attr.aria-invalid]="errorFila(i, 'fecha') ? 'true' : null"
+                  [attr.aria-describedby]="errorFila(i, 'fecha') ? 'err-fecha-' + i : null"
+                />
+                @if (errorFila(i, 'fecha'); as e) {
+                  <p [id]="'err-fecha-' + i" class="mt-1 text-sm font-medium text-red-700">
+                    ⚠ {{ e }}
+                  </p>
+                }
+              </div>
+              <div>
+                <label [for]="'horas-' + i" class="block text-sm font-medium text-slate-700">
+                  Horas extra
+                </label>
+                <input
+                  [id]="'horas-' + i"
+                  type="number"
+                  inputmode="decimal"
+                  step="0.25"
+                  min="0"
+                  formControlName="horas"
+                  class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                  [attr.aria-invalid]="errorFila(i, 'horas') ? 'true' : null"
+                  [attr.aria-describedby]="errorFila(i, 'horas') ? 'err-horas-' + i : null"
+                />
+                @if (errorFila(i, 'horas'); as e) {
+                  <p [id]="'err-horas-' + i" class="mt-1 text-sm font-medium text-red-700">
+                    ⚠ {{ e }}
+                  </p>
+                }
+              </div>
+              <div class="sm:pt-7">
+                <button
+                  type="button"
+                  (click)="quitarDia(i)"
+                  [disabled]="form.controls.registros.length === 1"
+                  class="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Quitar<span class="sr-only"> día {{ i + 1 }}</span>
+                </button>
+              </div>
+            </div>
+            <label class="mt-3 flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" formControlName="esDescanso" />
+              Fue día de descanso o festivo (se marcará como pendiente de validar)
+            </label>
+          </li>
+        }
+      </ul>
+      @if (errores()?.registros; as e) {
+        <p class="text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+      }
+
+      <button
+        type="button"
+        (click)="agregarDia()"
+        class="rounded-md border border-navy-600 px-4 py-2 text-sm font-medium text-navy-800 hover:bg-navy-50"
+      >
+        + Agregar día
+      </button>
+    </fieldset>
+
+    @if (hayErrores) {
+      <p class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        Revisa los campos marcados para poder calcular.
+      </p>
+    }
+
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="submit"
+        class="rounded-md bg-navy-900 px-5 py-2.5 font-medium text-white hover:bg-navy-800"
+      >
+        Calcular horas extra
+      </button>
+      <button
+        type="button"
+        (click)="limpiar()"
+        class="rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  @if (resultado(); as r) {
+    <section
+      class="mt-8 rounded-xl border border-navy-200 bg-white p-6 shadow-sm"
+      aria-labelledby="h-resultado"
+      aria-live="polite"
+    >
+      <h2 id="h-resultado" class="text-xl font-semibold text-navy-900">Resultado estimado</h2>
+      <p class="mt-1 text-sm text-slate-600">
+        Periodo: del {{ formatearFecha(r.periodoInicio) }} al {{ formatearFecha(r.periodoFin) }} ·
+        Salario diario: {{ formatearMoneda(r.salarioDiario) }} · Salario por hora:
+        {{ formatearMoneda(r.salarioPorHora) }}
+      </p>
+
+      <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Horas a pago doble ({{ r.horasDobles }} h)</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.importeDobles) }}
+          </dd>
+        </div>
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Horas a pago triple ({{ r.horasTriples }} h)</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.importeTriples) }}
+          </dd>
+        </div>
+        <div class="rounded-lg border-2 border-navy-900 p-4">
+          <dt class="text-sm text-slate-600">Total bruto estimado</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.totalBruto) }}
+          </dd>
+        </div>
+      </dl>
+      <p class="mt-3 text-sm text-slate-600">
+        {{ r.horasExtra }} horas extra incluidas, sobre {{ r.horasOrdinarias }} horas ordinarias de
+        esos mismos días.
+      </p>
+
+      @if (r.advertencias.length > 0) {
+        <div class="mt-6 rounded-md border border-amber-300 bg-amber-50 p-4" role="status">
+          <h3 class="font-semibold text-slate-900">⚠ Advertencias</h3>
+          <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-800">
+            @for (a of r.advertencias; track a) {
+              <li>{{ a }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <h3 class="mt-8 text-lg font-semibold text-navy-900">Desglose por semana</h3>
+      @for (s of r.semanas; track s.inicio.getTime()) {
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full min-w-[32rem] text-left text-sm">
+            <caption class="pb-2 text-left font-medium text-slate-700">
+              Semana del
+              {{
+                formatearFecha(s.inicio)
+              }}
+              al
+              {{
+                formatearFecha(s.fin)
+              }}
+            </caption>
+            <thead>
+              <tr class="border-b border-slate-300 text-slate-600">
+                <th scope="col" class="py-2 pr-3 font-medium">Fecha</th>
+                <th scope="col" class="py-2 pr-3 font-medium">Horas extra</th>
+                <th scope="col" class="py-2 pr-3 font-medium">Dobles</th>
+                <th scope="col" class="py-2 pr-3 font-medium">Triples</th>
+                <th scope="col" class="py-2 font-medium">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of s.dias; track d.fecha.getTime()) {
+                <tr class="border-b border-slate-100">
+                  <td class="py-2 pr-3">{{ formatearFecha(d.fecha) }}</td>
+                  <td class="py-2 pr-3 tabular-nums">{{ d.horas }}</td>
+                  <td class="py-2 pr-3 tabular-nums">{{ d.horasDobles }}</td>
+                  <td class="py-2 pr-3 tabular-nums">{{ d.horasTriples }}</td>
+                  <td class="py-2">
+                    @if (d.estado === 'incluido') {
+                      ✔ Incluido
+                    } @else {
+                      ⚠ Pendiente de validar
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="font-semibold">
+                <th scope="row" class="py-2 pr-3 text-left">Semana</th>
+                <td class="py-2 pr-3"></td>
+                <td class="py-2 pr-3 tabular-nums">{{ formatearMoneda(s.importeDobles) }}</td>
+                <td class="py-2 pr-3 tabular-nums">{{ formatearMoneda(s.importeTriples) }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+
+      <h3 class="mt-8 font-semibold text-navy-900">Fórmulas y supuestos</h3>
+      <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        @for (n of r.notas; track n) {
+          <li>{{ n }}</li>
+        }
+      </ul>
+
+      <button
+        type="button"
+        (click)="imprimir()"
+        class="no-print mt-6 rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Imprimir o guardar como PDF
+      </button>
+    </section>
+  }
+
+  <section class="mt-8 space-y-4" aria-labelledby="h-fuentes">
+    <app-aviso-legal />
+    <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+      <h2 id="h-fuentes" class="font-semibold text-navy-900">Fuentes y limitaciones</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>
+          Ley Federal del Trabajo: arts. 60 y 61 (jornadas y duración máxima), 66 (límite de tres
+          horas diarias y tres veces por semana), 67 (pago con 100 % más) y 68 (excedente de nueve
+          horas semanales con 200 % más). Revisado el 21 de octubre de 2026 con fuentes secundarias;
+          cotéjalo con el texto oficial.
+        </li>
+        <li>
+          Se interpreta que lo que excede los límites diarios o de días por semana se paga como
+          triple, y además se señala como posible irregularidad. Esta es una interpretación, no una
+          determinación legal.
+        </li>
+        <li>
+          No se modela el tiempo trabajado en días de descanso o festivos, ni el pago de la prima
+          dominical, ni jornadas especiales, acumuladas o reducidas por convenio. No hay retención
+          de ISR.
+        </li>
+      </ul>
+    </div>
+  </section>
+</section>

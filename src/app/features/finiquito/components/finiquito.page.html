@@ -1,0 +1,375 @@
+<section class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+  <h1 class="text-3xl font-bold text-navy-900">Calculadora de finiquito y liquidación</h1>
+  <p class="mt-2 text-slate-600">
+    Desglosa los conceptos que pueden corresponder al terminar una relación laboral, según el motivo
+    y tus datos.
+  </p>
+
+  <div
+    class="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-slate-800"
+    role="note"
+  >
+    <p class="font-semibold text-slate-900">Estimación informativa, no una determinación legal</p>
+    <p class="mt-1">
+      El <strong>finiquito</strong> reúne lo ya devengado y se paga sin importar el motivo. La
+      <strong>liquidación</strong> agrega indemnizaciones y prima de antigüedad, que dependen del
+      motivo y de las circunstancias particulares: si un despido es justificado o no lo determina
+      una autoridad. Ninguna cantidad aquí es garantía de lo que deba pagarse.
+    </p>
+  </div>
+
+  <form
+    class="no-print mt-8 space-y-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    [formGroup]="form"
+    (ngSubmit)="calcular()"
+    novalidate
+  >
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Relación laboral</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="motivo" class="block text-sm font-medium text-slate-700">
+            Motivo de terminación
+          </label>
+          <select
+            id="motivo"
+            formControlName="motivo"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            @for (m of motivos; track m.valor) {
+              <option [value]="m.valor">{{ m.etiqueta }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="tipoContrato" class="block text-sm font-medium text-slate-700">
+            Tipo de contrato
+          </label>
+          <select
+            id="tipoContrato"
+            formControlName="tipoContrato"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="indeterminado">Tiempo indeterminado</option>
+            <option value="determinado">Tiempo determinado</option>
+          </select>
+        </div>
+        <div>
+          <label for="fechaIngreso" class="block text-sm font-medium text-slate-700">
+            Fecha de ingreso
+          </label>
+          <input
+            id="fechaIngreso"
+            type="date"
+            formControlName="fechaIngreso"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('fechaIngreso') ? 'true' : null"
+            [attr.aria-describedby]="error('fechaIngreso') ? 'err-fechaIngreso' : null"
+          />
+          @if (error('fechaIngreso'); as e) {
+            <p id="err-fechaIngreso" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+        <div>
+          <label for="fechaTerminacion" class="block text-sm font-medium text-slate-700">
+            Fecha de terminación
+          </label>
+          <input
+            id="fechaTerminacion"
+            type="date"
+            formControlName="fechaTerminacion"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('fechaTerminacion') ? 'true' : null"
+            [attr.aria-describedby]="error('fechaTerminacion') ? 'err-fechaTerminacion' : null"
+          />
+          @if (error('fechaTerminacion'); as e) {
+            <p id="err-fechaTerminacion" class="mt-1 text-sm font-medium text-red-700" role="alert">
+              ⚠ {{ e }}
+            </p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Salario</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="tipoSalario" class="block text-sm font-medium text-slate-700">
+            Periodicidad del salario
+          </label>
+          <select
+            id="tipoSalario"
+            formControlName="tipoSalario"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="mensual">Mensual</option>
+            <option value="diario">Diario</option>
+          </select>
+        </div>
+        <div>
+          <label for="salario" class="block text-sm font-medium text-slate-700">
+            Salario bruto (MXN)
+          </label>
+          <input
+            id="salario"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="salario"
+            placeholder="Ej. 15000"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('salario') ? 'true' : null"
+            [attr.aria-describedby]="error('salario') ? 'err-salario' : null"
+          />
+          @if (error('salario'); as e) {
+            <p id="err-salario" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+        <div>
+          <label for="variabilidad" class="block text-sm font-medium text-slate-700">
+            Tipo de salario
+          </label>
+          <select
+            id="variabilidad"
+            formControlName="variabilidad"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="fijo">Fijo</option>
+            <option value="variable">Variable</option>
+          </select>
+        </div>
+        <div>
+          <label for="zona" class="block text-sm font-medium text-slate-700">
+            Zona salarial (tope de la prima de antigüedad)
+          </label>
+          <select
+            id="zona"
+            formControlName="zona"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="general">Zona general</option>
+            <option value="frontera-norte">Zona Libre de la Frontera Norte</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2 sm:max-w-sm">
+          <label for="salarioDiarioIntegrado" class="block text-sm font-medium text-slate-700">
+            Salario diario integrado (opcional, MXN)
+          </label>
+          <input
+            id="salarioDiarioIntegrado"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="salarioDiarioIntegrado"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            aria-describedby="ayuda-sdi"
+            [attr.aria-invalid]="error('salarioDiarioIntegrado') ? 'true' : null"
+          />
+          <p id="ayuda-sdi" class="mt-1 text-xs text-slate-500">
+            Si lo conoces, se usa en las indemnizaciones. Si lo dejas vacío, se usa el salario
+            diario ordinario.
+          </p>
+          @if (error('salarioDiarioIntegrado'); as e) {
+            <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Conceptos devengados</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        @for (c of camposDevengados; track c.id) {
+          <div>
+            <label [for]="c.id" class="block text-sm font-medium text-slate-700">
+              {{ c.etiqueta }}
+            </label>
+            <input
+              [id]="c.id"
+              type="number"
+              inputmode="decimal"
+              [step]="c.paso"
+              min="0"
+              [formControlName]="c.id"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              [attr.aria-describedby]="error(c.id) ? 'err-' + c.id : 'ayuda-' + c.id"
+              [attr.aria-invalid]="error(c.id) ? 'true' : null"
+            />
+            <p [id]="'ayuda-' + c.id" class="mt-1 text-xs text-slate-500">{{ c.ayuda }}</p>
+            @if (error(c.id); as e) {
+              <p [id]="'err-' + c.id" class="mt-1 text-sm font-medium text-red-700" role="alert">
+                ⚠ {{ e }}
+              </p>
+            }
+          </div>
+        }
+      </div>
+    </fieldset>
+
+    @if (hayErrores) {
+      <p class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        Revisa los campos marcados para poder calcular.
+      </p>
+    }
+
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="submit"
+        class="rounded-md bg-navy-900 px-5 py-2.5 font-medium text-white hover:bg-navy-800"
+      >
+        Calcular finiquito
+      </button>
+      <button
+        type="button"
+        (click)="limpiar()"
+        class="rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  @if (resultado(); as r) {
+    <section
+      class="mt-8 rounded-xl border border-navy-200 bg-white p-6 shadow-sm"
+      aria-labelledby="h-resultado"
+      aria-live="polite"
+    >
+      <h2 id="h-resultado" class="text-xl font-semibold text-navy-900">Resultado estimado</h2>
+      <p class="mt-1 text-sm text-slate-600">
+        Antigüedad: {{ r.antiguedad.anios }} años, {{ r.antiguedad.meses }} meses,
+        {{ r.antiguedad.dias }} días · Salario diario utilizado:
+        {{ formatearMoneda(r.salarioDiario) }}
+      </p>
+
+      <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Finiquito (bruto)</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.totalFiniquito) }}
+          </dd>
+        </div>
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Liquidación (bruto, solo conceptos incluidos)</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.totalLiquidacion) }}
+          </dd>
+        </div>
+        <div class="rounded-lg border-2 border-navy-900 p-4">
+          <dt class="text-sm text-slate-600">Total bruto estimado</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.totalBruto) }}
+          </dd>
+        </div>
+      </dl>
+
+      @if (r.pendientes.length > 0) {
+        <p
+          class="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-slate-800"
+          role="status"
+        >
+          <strong>⚠ {{ r.pendientes.length }} concepto(s) pendiente(s) de validar</strong> no están
+          sumados al total. Consulta el detalle de cada uno abajo.
+        </p>
+      }
+
+      @for (grupo of ['finiquito', 'liquidacion']; track grupo) {
+        <h3 class="mt-8 text-lg font-semibold text-navy-900">
+          {{
+            grupo === 'finiquito'
+              ? 'Finiquito: conceptos devengados'
+              : 'Liquidación: indemnizaciones y prima de antigüedad'
+          }}
+        </h3>
+        <ul class="mt-3 space-y-3">
+          @for (
+            c of conceptosDe(r, grupo === 'finiquito' ? 'finiquito' : 'liquidacion');
+            track c.id
+          ) {
+            <li class="rounded-lg border border-slate-200 p-4">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <p class="font-medium text-navy-900">{{ c.nombre }}</p>
+                <p class="text-lg font-semibold tabular-nums">
+                  @if (c.importe !== null) {
+                    {{ formatearMoneda(c.importe) }}
+                  } @else {
+                    <span class="text-slate-500">—</span>
+                  }
+                </p>
+              </div>
+              <p class="mt-1">
+                <span
+                  class="inline-block rounded border px-2 py-0.5 text-xs font-semibold"
+                  [class]="claseEstado(c.estado)"
+                >
+                  {{ iconoEstado(c.estado) }} {{ etiquetaEstado(c.estado) }}
+                </span>
+                <span class="ml-2 text-xs text-slate-500">{{ c.referencia }}</span>
+              </p>
+              <p class="mt-2 text-sm text-slate-700">{{ c.detalle }}</p>
+              @if (c.formula) {
+                <p class="mt-2 rounded bg-slate-50 p-2 text-xs text-slate-700">
+                  Fórmula: {{ c.formula }}
+                </p>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (r.advertencias.length > 0) {
+        <h3 class="mt-8 font-semibold text-navy-900">Advertencias</h3>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-amber-900">
+          @for (a of r.advertencias; track a) {
+            <li>{{ a }}</li>
+          }
+        </ul>
+      }
+
+      <h3 class="mt-6 font-semibold text-navy-900">Supuestos y notas</h3>
+      <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        @for (n of r.notas; track n) {
+          <li>{{ n }}</li>
+        }
+      </ul>
+
+      <button
+        type="button"
+        (click)="imprimir()"
+        class="no-print mt-6 rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Imprimir o guardar como PDF
+      </button>
+    </section>
+  }
+
+  <section class="mt-8 space-y-4" aria-labelledby="h-fuentes">
+    <app-aviso-legal />
+    <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+      <h2 id="h-fuentes" class="font-semibold text-navy-900">Fuentes y limitaciones</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>
+          Ley Federal del Trabajo: arts. 76 y 80 (vacaciones y prima vacacional), 87 (aguinaldo),
+          47, 48, 50 y 52 (terminación e indemnizaciones) y 162 (prima de antigüedad). Revisado el
+          21 de octubre de 2026.
+        </li>
+        <li>
+          Salarios mínimos (tope de la prima de antigüedad): CONASAMI, 2025 y 2026. Para fechas
+          fuera de esos años la prima queda pendiente de validar.
+        </li>
+        <li>
+          Los arts. 48 y 50 se modelaron según su contenido conocido y no se cotejaron con el texto
+          oficial en esta revisión; verifícalos antes de tomar decisiones.
+        </li>
+        <li>
+          No se calculan retenciones de ISR ni exenciones. No se modelan contratos por tiempo
+          determinado, trabajadores con regímenes especiales, pagos por riesgo de trabajo,
+          participación de utilidades (PTU) ni los salarios vencidos.
+        </li>
+      </ul>
+    </div>
+  </section>
+</section>

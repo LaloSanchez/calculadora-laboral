@@ -1,0 +1,435 @@
+<section class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+  <h1 class="text-3xl font-bold text-navy-900">Calculadora de sueldo neto</h1>
+  <p class="mt-2 text-slate-600">
+    Estima cuánto recibes después del ISR y de las cuotas obreras del IMSS, con el desglose y las
+    reglas usadas.
+  </p>
+
+  <div
+    class="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-slate-800"
+    role="note"
+  >
+    <p class="font-semibold text-slate-900">
+      Estimación informativa; no es una simulación oficial de nómina
+    </p>
+    <p class="mt-1">
+      Solo para trabajadores asalariados inscritos en el IMSS. No cubre honorarios, asimilados a
+      salarios, descuentos de Infonavit ni el ajuste anual del ISR. Las reglas fiscales corresponden
+      a fechas de pago de 2026; para otras fechas la herramienta no calcula.
+    </p>
+  </div>
+
+  <form
+    class="no-print mt-8 space-y-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    [formGroup]="form"
+    (ngSubmit)="calcular()"
+    novalidate
+  >
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Pago</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="periodicidad" class="block text-sm font-medium text-slate-700">
+            Periodicidad del pago
+          </label>
+          <select
+            id="periodicidad"
+            formControlName="periodicidad"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            @for (p of periodicidades; track p.valor) {
+              <option [value]="p.valor">{{ p.etiqueta }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label for="fechaPago" class="block text-sm font-medium text-slate-700">
+            Fecha de pago
+          </label>
+          <input
+            id="fechaPago"
+            type="date"
+            formControlName="fechaPago"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            aria-describedby="ayuda-fecha"
+            [attr.aria-invalid]="error('fechaPago') ? 'true' : null"
+          />
+          <p id="ayuda-fecha" class="mt-1 text-xs text-slate-500">
+            Determina la UMA, el subsidio y las reglas vigentes.
+          </p>
+          @if (error('fechaPago'); as e) {
+            <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+          }
+        </div>
+        <div>
+          <label for="salarioBruto" class="block text-sm font-medium text-slate-700">
+            Salario bruto del periodo (MXN)
+          </label>
+          <input
+            id="salarioBruto"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="salarioBruto"
+            placeholder="Ej. 15000"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('salarioBruto') ? 'true' : null"
+            [attr.aria-describedby]="error('salarioBruto') ? 'err-salarioBruto' : null"
+          />
+          @if (error('salarioBruto'); as e) {
+            <p id="err-salarioBruto" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Otras percepciones y deducciones</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        @for (c of camposImporte; track c.id) {
+          <div>
+            <label [for]="c.id" class="block text-sm font-medium text-slate-700">
+              {{ c.etiqueta }}
+            </label>
+            <input
+              [id]="c.id"
+              type="number"
+              inputmode="decimal"
+              step="0.01"
+              min="0"
+              [formControlName]="c.id"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              [attr.aria-describedby]="error(c.id) ? 'err-' + c.id : 'ayuda-' + c.id"
+              [attr.aria-invalid]="error(c.id) ? 'true' : null"
+            />
+            <p [id]="'ayuda-' + c.id" class="mt-1 text-xs text-slate-500">{{ c.ayuda }}</p>
+            @if (error(c.id); as e) {
+              <p [id]="'err-' + c.id" class="mt-1 text-sm font-medium text-red-700" role="alert">
+                ⚠ {{ e }}
+              </p>
+            }
+          </div>
+        }
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Salario base de cotización (IMSS)</legend>
+      <p class="text-sm text-slate-600">
+        El salario base de cotización (SBC) es distinto del salario bruto: integra también aguinaldo
+        y prima vacacional.
+      </p>
+      <div class="flex flex-col gap-2 sm:flex-row sm:gap-6">
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" formControlName="modoSbc" value="estimado" />
+          Estimarlo con mis prestaciones de ley
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" formControlName="modoSbc" value="capturado" />
+          Ya conozco mi SBC diario
+        </label>
+      </div>
+
+      @if (sbcEstimado()) {
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label for="diasAguinaldo" class="block text-sm font-medium text-slate-700">
+              Días de aguinaldo
+            </label>
+            <input
+              id="diasAguinaldo"
+              type="number"
+              step="1"
+              min="0"
+              formControlName="diasAguinaldo"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              [attr.aria-invalid]="error('diasAguinaldo') ? 'true' : null"
+              [attr.aria-describedby]="error('diasAguinaldo') ? 'err-diasAguinaldo' : null"
+            />
+            @if (error('diasAguinaldo'); as e) {
+              <p id="err-diasAguinaldo" class="mt-1 text-sm font-medium text-red-700" role="alert">
+                ⚠ {{ e }}
+              </p>
+            }
+          </div>
+          <div>
+            <label for="diasVacaciones" class="block text-sm font-medium text-slate-700">
+              Días de vacaciones al año
+            </label>
+            <input
+              id="diasVacaciones"
+              type="number"
+              step="1"
+              min="0"
+              formControlName="diasVacaciones"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              aria-describedby="ayuda-vac"
+              [attr.aria-invalid]="error('diasVacaciones') ? 'true' : null"
+            />
+            <p id="ayuda-vac" class="mt-1 text-xs text-slate-500">
+              12 el primer año; más con la antigüedad.
+            </p>
+            @if (error('diasVacaciones'); as e) {
+              <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+            }
+          </div>
+          <div>
+            <label for="porcentajePrima" class="block text-sm font-medium text-slate-700">
+              Prima vacacional (%)
+            </label>
+            <input
+              id="porcentajePrima"
+              type="number"
+              step="0.01"
+              min="0"
+              formControlName="porcentajePrima"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              [attr.aria-invalid]="error('porcentajePrima') ? 'true' : null"
+              [attr.aria-describedby]="error('porcentajePrima') ? 'err-prima' : null"
+            />
+            @if (error('porcentajePrima'); as e) {
+              <p id="err-prima" class="mt-1 text-sm font-medium text-red-700" role="alert">
+                ⚠ {{ e }}
+              </p>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="sm:max-w-xs">
+          <label for="sbcDiarioCapturado" class="block text-sm font-medium text-slate-700">
+            SBC diario (MXN)
+          </label>
+          <input
+            id="sbcDiarioCapturado"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="sbcDiarioCapturado"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            aria-describedby="ayuda-sbc"
+            [attr.aria-invalid]="error('sbcDiarioCapturado') ? 'true' : null"
+          />
+          <p id="ayuda-sbc" class="mt-1 text-xs text-slate-500">
+            Lo encuentras en tu aviso de alta del IMSS o en tu recibo de nómina.
+          </p>
+          @if (error('sbcDiarioCapturado'); as e) {
+            <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+          }
+        </div>
+      }
+    </fieldset>
+
+    @if (hayErrores) {
+      <p class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        Revisa los campos marcados para poder calcular.
+      </p>
+    }
+
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="submit"
+        class="rounded-md bg-navy-900 px-5 py-2.5 font-medium text-white hover:bg-navy-800"
+      >
+        Calcular sueldo neto
+      </button>
+      <button
+        type="button"
+        (click)="limpiar()"
+        class="rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  @if (resultado(); as r) {
+    <section
+      class="mt-8 rounded-xl border border-navy-200 bg-white p-6 shadow-sm"
+      aria-labelledby="h-resultado"
+      aria-live="polite"
+    >
+      <h2 id="h-resultado" class="text-xl font-semibold text-navy-900">Resultado estimado</h2>
+
+      <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Total de percepciones</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.totalPercepciones) }}
+          </dd>
+        </div>
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">
+            Total de deducciones ({{ r.porcentajeDeducciones }} %)
+          </dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.totalDeducciones) }}
+          </dd>
+        </div>
+        <div class="rounded-lg border-2 border-navy-900 p-4">
+          <dt class="text-sm text-slate-600">Sueldo neto estimado</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.sueldoNeto) }}
+          </dd>
+        </div>
+      </dl>
+
+      <h3 class="mt-8 text-lg font-semibold text-navy-900">Percepciones</h3>
+      <dl class="mt-2 divide-y divide-slate-100 text-sm">
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Salario bruto del periodo</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.salarioBruto) }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Otras percepciones gravadas</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.otrasPercepcionesGravadas) }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Percepciones exentas</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.percepcionesExentas) }}</dd>
+        </div>
+        <div class="flex justify-between py-2 font-medium">
+          <dt>Base gravable estimada (ISR)</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.baseGravable) }}</dd>
+        </div>
+      </dl>
+
+      <h3 class="mt-8 text-lg font-semibold text-navy-900">Deducciones obligatorias</h3>
+      <dl class="mt-2 divide-y divide-slate-100 text-sm">
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">
+            ISR causado (tarifa {{ r.periodicidad }}, {{ r.isr.renglon.porcentaje }} % sobre el
+            excedente)
+          </dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.isr.isrCausado) }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">(−) Subsidio para el empleo aplicado</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.subsidio.subsidioAplicado) }}</dd>
+        </div>
+        <div class="flex justify-between py-2 font-medium">
+          <dt>ISR estimado a retener</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.isrRetenido) }}</dd>
+        </div>
+        <div class="flex justify-between py-2 font-medium">
+          <dt>Cuotas del trabajador al IMSS</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.totalImss) }}</dd>
+        </div>
+      </dl>
+      <p class="mt-2 text-sm text-slate-600">{{ r.subsidio.motivo }}</p>
+
+      <h3 class="mt-8 text-lg font-semibold text-navy-900">
+        Otras deducciones (opcionales, capturadas por ti)
+      </h3>
+      <dl class="mt-2 text-sm">
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Otras deducciones</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.otrasDeducciones) }}</dd>
+        </div>
+      </dl>
+
+      <h3 class="mt-8 text-lg font-semibold text-navy-900">Cuotas del IMSS</h3>
+      <p class="mt-1 text-sm text-slate-600">
+        SBC diario: {{ formatearMoneda(r.sbc.sbcDiario) }}
+        @if (r.sbc.factorIntegracion !== null) {
+          (factor de integración {{ r.sbc.factorIntegracion }})
+        }
+        · SBC usado: {{ formatearMoneda(r.sbc.sbcDiarioTopado) }}
+        @if (r.sbc.topado) {
+          (topado a 25 UMA)
+        }
+        · UMA: {{ formatearMoneda(r.umaDiaria) }}
+      </p>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[32rem] text-left text-sm">
+          <caption class="sr-only">
+            Cuotas obreras del IMSS por ramo
+          </caption>
+          <thead>
+            <tr class="border-b border-slate-300 text-slate-600">
+              <th scope="col" class="py-2 pr-3 font-medium">Ramo</th>
+              <th scope="col" class="py-2 pr-3 font-medium">Tasa</th>
+              <th scope="col" class="py-2 pr-3 font-medium">Base del periodo</th>
+              <th scope="col" class="py-2 text-right font-medium">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of r.imss; track c.nombre) {
+              <tr class="border-b border-slate-100">
+                <td class="py-2 pr-3">
+                  {{ c.nombre }}<span class="block text-xs text-slate-500">{{ c.referencia }}</span>
+                </td>
+                <td class="py-2 pr-3 tabular-nums">{{ c.tasa }} %</td>
+                <td class="py-2 pr-3 tabular-nums">{{ formatearMoneda(c.base) }}</td>
+                <td class="py-2 text-right tabular-nums">{{ formatearMoneda(c.importe) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="mt-8 font-semibold text-navy-900">Fórmulas</h3>
+      <ul class="mt-1 list-disc space-y-1 rounded-md bg-navy-50 p-3 pl-8 text-sm">
+        @for (f of r.formulas; track f) {
+          <li>{{ f }}</li>
+        }
+      </ul>
+
+      <div class="mt-6 rounded-md border border-amber-300 bg-amber-50 p-4" role="status">
+        <h3 class="font-semibold text-slate-900">⚠ Advertencias y estado de verificación</h3>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-800">
+          @for (a of r.advertencias; track a) {
+            <li>{{ a }}</li>
+          }
+        </ul>
+      </div>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Supuestos y notas</h3>
+      <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        @for (n of r.notas; track n) {
+          <li>{{ n }}</li>
+        }
+      </ul>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Fuentes de esta estimación</h3>
+      <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        @for (f of r.fuentes; track f) {
+          <li>{{ f }}</li>
+        }
+      </ul>
+
+      <button
+        type="button"
+        (click)="imprimir()"
+        class="no-print mt-6 rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Imprimir o guardar como PDF
+      </button>
+    </section>
+  }
+
+  <section class="mt-8 space-y-4" aria-labelledby="h-fuentes">
+    <app-aviso-legal />
+    <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+      <h2 id="h-fuentes" class="font-semibold text-navy-900">Fuentes y limitaciones</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>
+          SAT: Anexo 8 de la RMF 2026 (DOF 28-dic-2025), tarifas de retención por periodicidad; Ley
+          del ISR, art. 96. Decreto del subsidio para el empleo (DOF 31-dic-2025). INEGI: UMA 2026.
+          IMSS: Ley del Seguro Social, arts. 25, 106, 107, 147 y 168. Revisado el 21 de octubre de
+          2026.
+        </li>
+        <li>
+          Los datos se contrastaron con copias y fuentes secundarias; confírmalos en el DOF, el SAT
+          y el IMSS antes de usarlos para decisiones importantes.
+        </li>
+        <li>
+          Vigencia: solo fechas de pago de 2026. El detalle del tratamiento del subsidio en periodos
+          menores a un mes y la cifra exacta de centavos del subsidio pueden variar con el criterio
+          de tu área de nómina.
+        </li>
+      </ul>
+    </div>
+  </section>
+</section>

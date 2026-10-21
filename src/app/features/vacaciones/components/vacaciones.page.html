@@ -1,0 +1,295 @@
+<section class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+  <h1 class="text-3xl font-bold text-navy-900">Calculadora de vacaciones y prima vacacional</h1>
+  <p class="mt-2 text-slate-600">
+    Estima los días de vacaciones que corresponden según tu antigüedad, tu saldo y la prima
+    vacacional.
+  </p>
+
+  <form
+    class="no-print mt-8 space-y-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    [formGroup]="form"
+    (ngSubmit)="calcular()"
+    novalidate
+  >
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Salario</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="tipoSalario" class="block text-sm font-medium text-slate-700">
+            Tipo de salario
+          </label>
+          <select
+            id="tipoSalario"
+            formControlName="tipoSalario"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="mensual">Mensual</option>
+            <option value="diario">Diario</option>
+          </select>
+        </div>
+        <div>
+          <label for="salario" class="block text-sm font-medium text-slate-700">
+            Salario bruto (MXN)
+          </label>
+          <input
+            id="salario"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="salario"
+            placeholder="Ej. 15000"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('salario') ? 'true' : null"
+            [attr.aria-describedby]="error('salario') ? 'err-salario' : null"
+          />
+          @if (error('salario'); as e) {
+            <p id="err-salario" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Antigüedad</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="fechaIngreso" class="block text-sm font-medium text-slate-700">
+            Fecha de ingreso
+          </label>
+          <input
+            id="fechaIngreso"
+            type="date"
+            formControlName="fechaIngreso"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('fechaIngreso') ? 'true' : null"
+            [attr.aria-describedby]="error('fechaIngreso') ? 'err-ingreso' : null"
+          />
+          @if (error('fechaIngreso'); as e) {
+            <p id="err-ingreso" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+        <div>
+          <label for="fechaCalculo" class="block text-sm font-medium text-slate-700">
+            Fecha de cálculo
+          </label>
+          <input
+            id="fechaCalculo"
+            type="date"
+            formControlName="fechaCalculo"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('fechaCalculo') ? 'true' : null"
+            [attr.aria-describedby]="error('fechaCalculo') ? 'err-calculo' : null"
+          />
+          @if (error('fechaCalculo'); as e) {
+            <p id="err-calculo" class="mt-1 text-sm font-medium text-red-700" role="alert">
+              ⚠ {{ e }}
+            </p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Vacaciones y prima</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="diasDisfrutados" class="block text-sm font-medium text-slate-700">
+            Días ya disfrutados del periodo vigente
+          </label>
+          <input
+            id="diasDisfrutados"
+            type="number"
+            inputmode="numeric"
+            step="1"
+            min="0"
+            formControlName="diasDisfrutados"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            aria-describedby="ayuda-disfrutados"
+            [attr.aria-invalid]="error('diasDisfrutados') ? 'true' : null"
+          />
+          <p id="ayuda-disfrutados" class="mt-1 text-xs text-slate-500">
+            Se cuentan los del periodo que inició en tu último aniversario laboral.
+          </p>
+          @if (error('diasDisfrutados'); as e) {
+            <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+          }
+        </div>
+        <div>
+          <label for="porcentajePrima" class="block text-sm font-medium text-slate-700">
+            Prima vacacional (%)
+          </label>
+          <input
+            id="porcentajePrima"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            [min]="primaMinima"
+            formControlName="porcentajePrima"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            aria-describedby="ayuda-prima"
+            [attr.aria-invalid]="error('porcentajePrima') ? 'true' : null"
+          />
+          <p id="ayuda-prima" class="mt-1 text-xs text-slate-500">
+            Mínimo legal: {{ primaMinima }} % (LFT, art. 80).
+          </p>
+          @if (error('porcentajePrima'); as e) {
+            <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    @if (hayErrores) {
+      <p class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        Revisa los campos marcados para poder calcular.
+      </p>
+    }
+
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="submit"
+        class="rounded-md bg-navy-900 px-5 py-2.5 font-medium text-white hover:bg-navy-800"
+      >
+        Calcular vacaciones
+      </button>
+      <button
+        type="button"
+        (click)="limpiar()"
+        class="rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  @if (resultado(); as r) {
+    <section
+      class="mt-8 rounded-xl border border-navy-200 bg-white p-6 shadow-sm"
+      aria-labelledby="h-resultado"
+      aria-live="polite"
+    >
+      <h2 id="h-resultado" class="text-xl font-semibold text-navy-900">Resultado estimado</h2>
+
+      @if (!r.definitivo) {
+        <p
+          class="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-slate-800"
+          role="status"
+        >
+          <strong>Estimación no definitiva.</strong> Revisa las advertencias de abajo.
+        </p>
+      }
+
+      <dl class="mt-4 grid gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Días de saldo estimado</dt>
+          <dd class="mt-1 text-3xl font-bold tabular-nums text-navy-900">{{ r.diasSaldo }}</dd>
+        </div>
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Salario de esos días</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.importeSaldo) }}
+          </dd>
+        </div>
+        <div class="rounded-lg bg-navy-50 p-4">
+          <dt class="text-sm text-slate-600">Prima vacacional ({{ r.porcentajePrima }} %)</dt>
+          <dd class="mt-1 text-2xl font-bold tabular-nums text-navy-900">
+            {{ formatearMoneda(r.primaVacacional) }}
+          </dd>
+        </div>
+      </dl>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Desglose</h3>
+      <dl class="mt-2 divide-y divide-slate-100 text-sm">
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Antigüedad</dt>
+          <dd>
+            {{ r.antiguedad.anios }} años, {{ r.antiguedad.meses }} meses,
+            {{ r.antiguedad.dias }} días
+          </dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Último aniversario laboral</dt>
+          <dd>{{ formatearFecha(r.fechaUltimoAniversario) }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Días generados en ese periodo</dt>
+          <dd class="tabular-nums">{{ r.diasGenerados }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Días disfrutados</dt>
+          <dd class="tabular-nums">{{ r.diasDisfrutados }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Salario diario utilizado</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.salarioDiario) }}</dd>
+        </div>
+      </dl>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Proporcional del año de servicio en curso</h3>
+      <p class="mt-1 text-sm text-slate-600">
+        Informativo: {{ r.proporcionalEnCurso.dias }} días ({{
+          r.proporcionalEnCurso.diasTranscurridos
+        }}
+        de {{ r.proporcionalEnCurso.diasDelPeriodo }} días transcurridos), equivalentes a
+        {{ formatearMoneda(r.proporcionalEnCurso.importe) }} de salario y
+        {{ formatearMoneda(r.proporcionalEnCurso.prima) }} de prima. No es un saldo exigible: suele
+        pagarse al terminar la relación laboral.
+      </p>
+
+      @if (r.advertencias.length > 0) {
+        <h3 class="mt-6 font-semibold text-navy-900">Advertencias</h3>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-amber-900">
+          @for (a of r.advertencias; track a) {
+            <li>{{ a }}</li>
+          }
+        </ul>
+      }
+
+      <h3 class="mt-6 font-semibold text-navy-900">Fórmulas</h3>
+      <ol class="mt-1 list-decimal space-y-1 rounded-md bg-navy-50 p-3 pl-8 text-sm">
+        @for (f of r.formulas; track f) {
+          <li>{{ f }}</li>
+        }
+      </ol>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Supuestos y notas</h3>
+      <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        @for (n of r.notas; track n) {
+          <li>{{ n }}</li>
+        }
+      </ul>
+
+      <button
+        type="button"
+        (click)="imprimir()"
+        class="no-print mt-6 rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Imprimir o guardar como PDF
+      </button>
+    </section>
+  }
+
+  <section class="mt-8 space-y-4" aria-labelledby="h-fuentes">
+    <app-aviso-legal />
+    <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+      <h2 id="h-fuentes" class="font-semibold text-navy-900">Fuentes y limitaciones</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>
+          Ley Federal del Trabajo, art. 76 (reforma "vacaciones dignas", DOF 27-dic-2022, vigente
+          desde el 1 de enero de 2023): 12 días el primer año, +2 por año hasta 20 al quinto, y +2
+          cada cinco años a partir del sexto. Art. 80: prima vacacional no menor al 25 %. Revisado
+          el 21 de octubre de 2026.
+        </li>
+        <li>
+          La tabla se contrastó con fuentes secundarias; confirma la redacción en el texto oficial
+          de la LFT.
+        </li>
+        <li>
+          Solo se evalúa el periodo del último aniversario; no se determinan periodos anteriores
+          pendientes, prescripción ni vacaciones compensadas.
+        </li>
+      </ul>
+    </div>
+  </section>
+</section>

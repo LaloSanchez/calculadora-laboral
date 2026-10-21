@@ -1,0 +1,233 @@
+<section class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+  <h1 class="text-3xl font-bold text-navy-900">Calculadora de aguinaldo</h1>
+  <p class="mt-2 text-slate-600">
+    Estima el aguinaldo anual completo o el proporcional al tiempo trabajado en el año.
+  </p>
+
+  <form
+    class="no-print mt-8 space-y-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    [formGroup]="form"
+    (ngSubmit)="calcular()"
+    novalidate
+  >
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Salario</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="tipoSalario" class="block text-sm font-medium text-slate-700">
+            Tipo de salario
+          </label>
+          <select
+            id="tipoSalario"
+            formControlName="tipoSalario"
+            class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+          >
+            <option value="mensual">Mensual</option>
+            <option value="diario">Diario</option>
+          </select>
+        </div>
+        <div>
+          <label for="salario" class="block text-sm font-medium text-slate-700">
+            Salario bruto (MXN)
+          </label>
+          <input
+            id="salario"
+            type="number"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            formControlName="salario"
+            placeholder="Ej. 15000"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            [attr.aria-invalid]="error('salario') ? 'true' : null"
+            [attr.aria-describedby]="error('salario') ? 'err-salario' : null"
+          />
+          @if (error('salario'); as e) {
+            <p id="err-salario" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Tipo de cálculo</legend>
+      <div class="flex flex-col gap-2 sm:flex-row sm:gap-6">
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" formControlName="modo" value="proporcional" />
+          Proporcional al tiempo trabajado
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" formControlName="modo" value="anual" />
+          Anual completo
+        </label>
+      </div>
+
+      @if (esProporcional()) {
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="fechaIngreso" class="block text-sm font-medium text-slate-700">
+              Fecha de ingreso
+            </label>
+            <input
+              id="fechaIngreso"
+              type="date"
+              formControlName="fechaIngreso"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              [attr.aria-invalid]="error('fechaIngreso') ? 'true' : null"
+              [attr.aria-describedby]="error('fechaIngreso') ? 'err-ingreso' : null"
+            />
+            @if (error('fechaIngreso'); as e) {
+              <p id="err-ingreso" class="mt-1 text-sm font-medium text-red-700">⚠ {{ e }}</p>
+            }
+          </div>
+          <div>
+            <label for="fechaCalculo" class="block text-sm font-medium text-slate-700">
+              Fecha de cálculo
+            </label>
+            <input
+              id="fechaCalculo"
+              type="date"
+              formControlName="fechaCalculo"
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              aria-describedby="ayuda-calculo"
+              [attr.aria-invalid]="error('fechaCalculo') ? 'true' : null"
+            />
+            <p id="ayuda-calculo" class="mt-1 text-xs text-slate-500">
+              Ej. 31 de diciembre para el cierre del año, o tu fecha de salida.
+            </p>
+            @if (error('fechaCalculo'); as e) {
+              <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+            }
+          </div>
+        </div>
+      }
+    </fieldset>
+
+    <fieldset class="space-y-4">
+      <legend class="text-lg font-semibold text-navy-900">Prestación</legend>
+      <div class="sm:max-w-xs">
+        <label for="diasAguinaldo" class="block text-sm font-medium text-slate-700">
+          Días de aguinaldo
+        </label>
+        <input
+          id="diasAguinaldo"
+          type="number"
+          inputmode="numeric"
+          step="1"
+          [min]="minimoLegal"
+          formControlName="diasAguinaldo"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          aria-describedby="ayuda-dias"
+          [attr.aria-invalid]="error('diasAguinaldo') ? 'true' : null"
+        />
+        <p id="ayuda-dias" class="mt-1 text-xs text-slate-500">
+          Mínimo legal: {{ minimoLegal }} días (LFT, art. 87). Cámbialo si tu empleador otorga más.
+        </p>
+        @if (error('diasAguinaldo'); as e) {
+          <p class="mt-1 text-sm font-medium text-red-700" role="alert">⚠ {{ e }}</p>
+        }
+      </div>
+    </fieldset>
+
+    @if (hayErrores) {
+      <p class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        Revisa los campos marcados para poder calcular.
+      </p>
+    }
+
+    <div class="flex flex-wrap gap-3">
+      <button
+        type="submit"
+        class="rounded-md bg-navy-900 px-5 py-2.5 font-medium text-white hover:bg-navy-800"
+      >
+        Calcular aguinaldo
+      </button>
+      <button
+        type="button"
+        (click)="limpiar()"
+        class="rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  @if (resultado(); as r) {
+    <section
+      class="mt-8 rounded-xl border border-navy-200 bg-white p-6 shadow-sm"
+      aria-labelledby="h-resultado"
+      aria-live="polite"
+    >
+      <h2 id="h-resultado" class="text-xl font-semibold text-navy-900">
+        {{ r.modo === 'anual' ? 'Aguinaldo anual estimado' : 'Aguinaldo proporcional estimado' }}
+      </h2>
+      <p class="mt-2 text-4xl font-bold tabular-nums text-navy-900">
+        {{ formatearMoneda(r.aguinaldoBruto) }}
+        <span class="text-base font-medium text-slate-500">bruto</span>
+      </p>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Desglose</h3>
+      <dl class="mt-2 divide-y divide-slate-100 text-sm">
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Salario diario utilizado</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.salarioDiario) }}</dd>
+        </div>
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Días de aguinaldo aplicables</dt>
+          <dd class="tabular-nums">{{ r.diasAguinaldo }}</dd>
+        </div>
+        @if (r.diasTrabajados !== null && r.diasDelAnio !== null) {
+          <div class="flex justify-between py-2">
+            <dt class="text-slate-600">Días considerados del año</dt>
+            <dd class="tabular-nums">{{ r.diasTrabajados }} de {{ r.diasDelAnio }}</dd>
+          </div>
+        }
+        <div class="flex justify-between py-2">
+          <dt class="text-slate-600">Proporción del año</dt>
+          <dd class="tabular-nums">{{ (r.proporcion * 100).toFixed(2) }} %</dd>
+        </div>
+        <div class="flex justify-between py-2 font-semibold">
+          <dt>Aguinaldo bruto estimado</dt>
+          <dd class="tabular-nums">{{ formatearMoneda(r.aguinaldoBruto) }}</dd>
+        </div>
+      </dl>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Fórmula</h3>
+      <p class="mt-1 rounded-md bg-navy-50 p-3 text-sm">{{ r.formula }}</p>
+
+      <h3 class="mt-6 font-semibold text-navy-900">Supuestos y notas</h3>
+      <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        @for (n of r.notas; track n) {
+          <li>{{ n }}</li>
+        }
+      </ul>
+
+      <button
+        type="button"
+        (click)="imprimir()"
+        class="no-print mt-6 rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Imprimir o guardar como PDF
+      </button>
+    </section>
+  }
+
+  <section class="mt-8 space-y-4" aria-labelledby="h-fuentes">
+    <app-aviso-legal />
+    <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+      <h2 id="h-fuentes" class="font-semibold text-navy-900">Fuentes y limitaciones</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        <li>
+          Ley Federal del Trabajo, art. 87: aguinaldo anual de al menos 15 días de salario, pagadero
+          antes del 20 de diciembre; proporcional cuando no se completó el año de servicios.
+          Revisado el 21 de octubre de 2026.
+        </li>
+        <li>No calcula retención de ISR; el importe es bruto.</li>
+        <li>
+          Para salarios variables, el salario diario debe determinarse conforme a la ley; aquí se
+          usa el valor que capturas.
+        </li>
+      </ul>
+    </div>
+  </section>
+</section>

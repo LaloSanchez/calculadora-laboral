@@ -35,7 +35,7 @@ export const routes: Routes = [
   {
     path: '**',
     title: `Página no encontrada | ${NOMBRE_PROYECTO}`,
-    data: { description: 'La página que buscas no existe.' },
+    data: { description: 'La página que buscas no existe.', noindex: true },
     loadComponent: () =>
       import('./shared/components/pagina-no-encontrada').then((m) => m.PaginaNoEncontradaComponent),
   },

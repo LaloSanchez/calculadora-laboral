@@ -1,5 +1,8 @@
 export const NOMBRE_PROYECTO = 'Calculadora Laboral México';
 
+/** Dirección pública del sitio, sin diagonal final. Debe coincidir con public/sitemap.xml y public/robots.txt. */
+export const SITIO_URL = 'https://laboral.eduardo-sanchez.dev';
+
 export const REPOSITORIO_URL = 'https://github.com/LaloSanchez/calculadora-laboral';
 
 export const FUENTES_LEGALES = [

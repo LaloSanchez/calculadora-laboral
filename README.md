@@ -61,7 +61,7 @@ El archivo [wrangler.json](wrangler.json) publica la carpeta compilada como acti
 4. Para publicar desde tu equipo: `npm run build` y luego `npx wrangler deploy` (requiere iniciar sesión con `npx wrangler login`).
 5. Para validar la configuración sin desplegar: `npx wrangler deploy --dry-run`.
 
-`public/_redirects` (`/* /index.html 200`) se conserva por si el sitio se publica en Cloudflare Pages clásico, donde sí hace falta. Si el despliegue con Wrangler lo rechazara, puedes eliminarlo: `not_found_handling` ya cubre el fallback.
+No incluyas un archivo `public/_redirects` con `/* /index.html 200`: Workers lo rechaza por detección de bucle infinito (error 100324) y el despliegue falla. El fallback ya lo resuelve `not_found_handling`. (Ese archivo solo se necesita si se publica en Cloudflare Pages clásico.)
 
 ## Fuentes y vigencia de las reglas
 

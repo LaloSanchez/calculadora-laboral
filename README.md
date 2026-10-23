@@ -61,7 +61,7 @@ El archivo [wrangler.json](wrangler.json) publica la carpeta compilada como acti
    - Comando de despliegue: `npx wrangler deploy`
    - Variable de entorno `NODE_VERSION` = `22` (si falla por la versión exacta de Node, usa `22.23.2`). No se requieren secretos.
 4. Para publicar desde tu equipo: `npm run build` y luego `npx wrangler deploy` (requiere iniciar sesión con `npx wrangler login`).
-5. SEO: `public/robots.txt` y `public/sitemap.xml` usan el dominio `https://laboral.eduardo-sanchez.dev`; si cambias de dominio, actualiza también `SITIO_URL` en `src/app/core/constants/proyecto.ts` y la canónica de `src/index.html`.
+5. SEO: `public/robots.txt` y `public/sitemap.xml` usan el dominio `https://laboral.eduardo-sanchez.dev`; si cambias de dominio, actualiza también `SITIO_URL` en `src/app/core/constants/proyecto.ts` (la canónica y `og:url` los fija `SeoService` por ruta; `index.html` no los trae a propósito para no declarar la portada como canónica de todas las rutas).
 6. Para validar la configuración sin desplegar: `npx wrangler deploy --dry-run`.
 
 No incluyas un archivo `public/_redirects` con `/* /index.html 200`: Workers lo rechaza por detección de bucle infinito (error 100324) y el despliegue falla. El fallback ya lo resuelve `not_found_handling`. (Ese archivo solo se necesita si se publica en Cloudflare Pages clásico.)
